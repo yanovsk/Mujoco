@@ -1,24 +1,35 @@
-// swift-tools-version: 6.0
+// swift-tools-version:5.9
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 
 import PackageDescription
 
+
 let package = Package(
-    name: "mujocoswift",
+    name: "Mujoco",
+    platforms: [
+        .visionOS(.v1) // or iOS, macOS, etc.
+    ],
     products: [
-        // Products define the executables and libraries a package produces, making them visible to other packages.
         .library(
-            name: "mujocoswift",
-            targets: ["mujocoswift"]),
+            name: "Mujoco",
+            targets: ["Mujoco"]
+        ),
     ],
     targets: [
-        // Targets are the basic building blocks of a package, defining a module or a test suite.
-        // Targets can depend on other targets in this package and products from dependencies.
-        .target(
-            name: "mujocoswift"),
-        .testTarget(
-            name: "mujocoswiftTests",
-            dependencies: ["mujocoswift"]
+        // 1) The binary target pointing to your XCFramework
+        .binaryTarget(
+            name: "C_mujoco",
+            path: "XCFrameworks/libMujoco.xcframework"
         ),
+        
+
+        .target(
+            name: "Mujoco",
+            dependencies: ["C_mujoco"],  // depends on the binary
+            path: "Sources/Mujoco",
+            linkerSettings: [
+                .linkedLibrary("c++")
+            ]
+        )
     ]
 )
