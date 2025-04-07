@@ -1,4 +1,5 @@
 import C_mujoco
+import Foundation
 
 public final class MjModel {
   let _model: UnsafeMutablePointer<mjModel>
@@ -24,7 +25,44 @@ public final class MjModel {
     }
     self.init(model: model)
   }
+    
+    //in assets keys must be filenames
+    public convenience init(fromXML: String, assets: [String: Data]) throws {
+      var xmlString = fromXML  // Make a mutable copy.
+      let errorStr = UnsafeMutablePointer<CChar>.allocate(capacity: 256)
+      defer { errorStr.deallocate() }
+      
+      let model: UnsafeMutablePointer<mjModel>? = xmlString.withUTF8 { utf8 in
+        let vfs = MjVFS(assets: assets)
+        
+        // Generate a unique filename for the XML file.
+        var modelName = "model_"
+        while assets[modelName + ".xml"] != nil {
+          modelName += "_"
+        }
+        let fileName = "\(modelName).xml"
+        
+        // Add the XML as a buffer into the VFS under fileName.
+        fileName.withCString { cStr in
+          let result = mj_addBufferVFS(vfs._vfs, cStr, utf8.baseAddress, Int32(utf8.count))
+          if result != 0 {
+            print("Failed to add XML to VFS. Error code: \(result)")
+          }
+        }
+        
+        // Load the model from the XML file in the VFS.
+        return mj_loadXML(fileName, vfs._vfs, errorStr, 256)
+      }
+      
+      guard let model = model else {
+        let error = String(cString: errorStr)
+        throw NSError(domain: "MuJoCo XML error", code: 1, userInfo: [NSLocalizedDescriptionKey: error])
+      }
+      
+      self.init(model: model)
+    }
 
+    
   public func makeData() -> MjData {
     let data = mj_makeData(_model)!
     return MjData(data: data, nq: _model.pointee.nq, nv: _model.pointee.nv, na: _model.pointee.na, nu: _model.pointee.nu, nbody: _model.pointee.nbody, nmocap: _model.pointee.nmocap, nuserdata: _model.pointee.nuserdata, nsensordata: _model.pointee.nsensordata)
@@ -65,6 +103,38 @@ public final class MjModel {
   public func reset(data: MjData, keyframe: Int32) {
     mj_resetDataKeyframe(_model, data._data, keyframe)
   }
+    
+    public var nbody: Int {
+        return Int(_model.pointee.nbody)
+    }
+
+    public var njnt: Int {
+        return Int(_model.pointee.njnt)
+    }
+
+    public var ngeom: Int {
+        return Int(_model.pointee.ngeom)
+    }
+
+    public func bodyName(atIndex i: Int) -> String {
+        // Step 1: find the offset in the `names` buffer
+        let offset = Int(_model.pointee.name_bodyadr[i])
+        
+        // Step 2: get a pointer to that C string
+        let basePtr = _model.pointee.names! // 'names' is a char* in the mjModel
+        let cStringPtr = basePtr.advanced(by: offset)
+        
+        // Step 3: convert C string -> Swift String
+        return String(cString: cStringPtr)
+    }
+    
+    public func jointName(atIndex i: Int) -> String {
+        let offset = Int(_model.pointee.name_jntadr[i])
+        let basePtr = _model.pointee.names!
+        let cStringPtr = basePtr.advanced(by: offset)
+        return String(cString: cStringPtr)
+    }
+    
 
   // Initial State.
   var qpos0: MjNumArray {
