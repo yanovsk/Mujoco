@@ -1,33 +1,33 @@
 import C_mujoco
 
 public final class MjData {
-  let _data: UnsafeMutablePointer<mjData>
-  let nq: Int32
-  let nv: Int32
-  let na: Int32
-  let nu: Int32
-  let nbody: Int32
-  let nmocap: Int32
-  let nuserdata: Int32
-  let nsensordata: Int32
-
-  init(data: UnsafeMutablePointer<mjData>, nq: Int32, nv: Int32, na: Int32, nu: Int32, nbody: Int32, nmocap: Int32, nuserdata: Int32, nsensordata: Int32) {
-    _data = data
-    self.nq = nq
-    self.nv = nv
-    self.na = na
-    self.nu = nu
-    self.nbody = nbody
-    self.nmocap = nmocap
-    self.nuserdata = nuserdata
-    self.nsensordata = nsensordata
-  }
-
-  deinit {
-    mj_deleteData(_data)
-  }
-
-  // State.
+    let _data: UnsafeMutablePointer<mjData>
+    let nq: Int32
+    let nv: Int32
+    let na: Int32
+    let nu: Int32
+    let nbody: Int32
+    let nmocap: Int32
+    let nuserdata: Int32
+    let nsensordata: Int32
+    
+    init(data: UnsafeMutablePointer<mjData>, nq: Int32, nv: Int32, na: Int32, nu: Int32, nbody: Int32, nmocap: Int32, nuserdata: Int32, nsensordata: Int32) {
+        _data = data
+        self.nq = nq
+        self.nv = nv
+        self.na = na
+        self.nu = nu
+        self.nbody = nbody
+        self.nmocap = nmocap
+        self.nuserdata = nuserdata
+        self.nsensordata = nsensordata
+    }
+    
+    deinit {
+        mj_deleteData(_data)
+    }
+    
+    // State.
     public var qpos: MjNumArray {
         get {
             MjNumArray(array: _data.pointee.qpos, object: self, len: nq)
@@ -37,130 +37,253 @@ public final class MjData {
             _data.pointee.qpos.assign(from: newValue._array, count: Int(nq))
         }
     }
+    
+    
+    public var qvel: MjNumArray {
+        get {
+            MjNumArray(array: _data.pointee.qvel, object: self, len: nv)
+        }
+        set {
+            guard _data.pointee.qvel != newValue._array else { return }
+            _data.pointee.qvel.assign(from: newValue._array, count: Int(nv))
+        }
+    }
+    
+    var act: MjNumArray {
+        get {
+            MjNumArray(array: _data.pointee.act, object: self, len: na)
+        }
+        set {
+            guard _data.pointee.act != newValue._array else { return }
+            _data.pointee.act.assign(from: newValue._array, count: Int(na))
+        }
+    }
+    
+    var qaccWarmstart: MjNumArray {
+        get {
+            MjNumArray(array: _data.pointee.qacc_warmstart, object: self, len: nv)
+        }
+        set {
+            guard _data.pointee.qacc_warmstart != newValue._array else { return }
+            _data.pointee.qacc_warmstart.assign(from: newValue._array, count: Int(nv))
+        }
+    }
+    
+    // Control.
+    var ctrl: MjNumArray {
+        get {
+            MjNumArray(array: _data.pointee.ctrl, object: self, len: nu)
+        }
+        set {
+            guard _data.pointee.ctrl != newValue._array else { return }
+            _data.pointee.ctrl.assign(from: newValue._array, count: Int(nu))
+        }
+    }
+    
+    var qfrcApplied: MjNumArray {
+        get {
+            MjNumArray(array: _data.pointee.qfrc_applied, object: self, len: nv)
+        }
+        set {
+            guard _data.pointee.qfrc_applied != newValue._array else { return }
+            _data.pointee.qfrc_applied.assign(from: newValue._array, count: Int(nv))
+        }
+    }
+    
+    var xfrcApplied: MjNumArray {
+        get {
+            MjNumArray(array: _data.pointee.xfrc_applied, object: self, len: nbody * 6)
+        }
+        set {
+            guard _data.pointee.xfrc_applied != newValue._array else { return }
+            _data.pointee.xfrc_applied.assign(from: newValue._array, count: Int(nbody * 6))
+        }
+    }
+    
+    // Access mocap_pos (mutable)
+        public subscript(mocapPos index: Int) -> [Double] {
+            get {
+                let ptr = _data.pointee.mocap_pos.advanced(by: 3 * index)
+                return [ptr[0], ptr[1], ptr[2]]
+            }
+            set {
+                precondition(newValue.count == 3)
+                let ptr = _data.pointee.mocap_pos.advanced(by: 3 * index)
+                ptr[0] = newValue[0]
+                ptr[1] = newValue[1]
+                ptr[2] = newValue[2]
+            }
+        }
 
+        // Access mocap_quat (mutable)
+        public subscript(mocapQuat index: Int) -> [Double] {
+            get {
+                let ptr = _data.pointee.mocap_quat.advanced(by: 4 * index)
+                return [ptr[0], ptr[1], ptr[2], ptr[3]]
+            }
+            set {
+                precondition(newValue.count == 4)
+                let ptr = _data.pointee.mocap_quat.advanced(by: 4 * index)
+                ptr[0] = newValue[0]
+                ptr[1] = newValue[1]
+                ptr[2] = newValue[2]
+                ptr[3] = newValue[3]
+            }
+        }
+    
+    
+    // Mocap data.
+    public var mocapPos: MjNumArray {
+        get {
+            MjNumArray(array: _data.pointee.mocap_pos, object: self, len: nmocap * 3)
+        }
+        set {
+            guard _data.pointee.mocap_pos != newValue._array else { return }
+            _data.pointee.mocap_pos.assign(from: newValue._array, count: Int(nmocap * 3))
+        }
+    }
+    
+    public var mocapQuat: MjNumArray {
+        get {
+            MjNumArray(array: _data.pointee.mocap_quat, object: self, len: nmocap * 4)
+        }
+        set {
+            guard _data.pointee.mocap_quat != newValue._array else { return }
+            _data.pointee.mocap_quat.assign(from: newValue._array, count: Int(nmocap * 4))
+        }
+    }
+    
+    // Dynamics.
+    var qacc: MjNumArray {
+        get {
+            MjNumArray(array: _data.pointee.qacc, object: self, len: nv)
+        }
+        set {
+            guard _data.pointee.qacc != newValue._array else { return }
+            _data.pointee.qacc.assign(from: newValue._array, count: Int(nv))
+        }
+    }
+    
+    var actDot: MjNumArray {
+        get {
+            MjNumArray(array: _data.pointee.act_dot, object: self, len: na)
+        }
+        set {
+            guard _data.pointee.act_dot != newValue._array else { return }
+            _data.pointee.act_dot.assign(from: newValue._array, count: Int(na))
+        }
+    }
+    
+    // User data.
+    var userdata: MjNumArray {
+        get {
+            MjNumArray(array: _data.pointee.userdata, object: self, len: nuserdata)
+        }
+        set {
+            guard _data.pointee.userdata != newValue._array else { return }
+            _data.pointee.userdata.assign(from: newValue._array, count: Int(nuserdata))
+        }
+    }
+    
+    // Sensors.
+    var sensordata: MjNumArray {
+        get {
+            MjNumArray(array: _data.pointee.sensordata, object: self, len: nsensordata)
+        }
+        set {
+            guard _data.pointee.sensordata != newValue._array else { return }
+            _data.pointee.sensordata.assign(from: newValue._array, count: Int(nsensordata))
+        }
+    }
+    
+    
+    // Accessor for body positions: returns a view of the entire xpos array
+    public var xpos: MjNumArray {
+        get {
+            MjNumArray(array: _data.pointee.xpos, object: self, len: nbody * 3)
+        }
+    }
+    
+    // Accessor for body orientations (quaternions): returns a view of the entire xquat array
+    public var xquat: MjNumArray {
+        get {
+            MjNumArray(array: _data.pointee.xquat, object: self, len: nbody * 4)
+        }
+    }
+    
+    public var geomXpos: MjNumArray {
+        // This assumes that _data.pointee.geom_xpos is valid and you know the total number of geom positions (ngeom * 3)
+        // You may need to obtain ngeom from your model.
+        // For now, assume a placeholder length.
+        return MjNumArray(array: _data.pointee.geom_xpos, object: self, len: 0)
+    }
 
-  public var qvel: MjNumArray {
-    get {
-      MjNumArray(array: _data.pointee.qvel, object: self, len: nv)
+    public var siteXpos: MjNumArray {
+        // Similarly, placeholder length.
+        return MjNumArray(array: _data.pointee.site_xpos, object: self, len: 0)
     }
-    set {
-      guard _data.pointee.qvel != newValue._array else { return }
-      _data.pointee.qvel.assign(from: newValue._array, count: Int(nv))
-    }
-  }
 
-  var act: MjNumArray {
-    get {
-      MjNumArray(array: _data.pointee.act, object: self, len: na)
+    public var xmat: MjNumArray {
+        return MjNumArray(array: _data.pointee.xmat, object: self, len: Int32(nbody * 9))
     }
-    set {
-      guard _data.pointee.act != newValue._array else { return }
-      _data.pointee.act.assign(from: newValue._array, count: Int(na))
+    
+    public var geomXmat: MjNumArray {
+        return MjNumArray(array: _data.pointee.geom_xmat, object: self, len: 0)
     }
-  }
+    
+    public var siteXmat: MjNumArray {
+        return MjNumArray(array: _data.pointee.site_xmat, object: self, len: 0)
+    }
+    
+    public func xpos(at id: Int, frameType: String) -> [Double] {
+        switch frameType {
+        case "body":
+            let arr = self.xpos._array
+            let offset = id * 3
+            return [arr[offset], arr[offset + 1], arr[offset + 2]]
+        case "geom":
+            let arr = self.geomXpos._array   // you need to provide geomXpos in MjData
+            let offset = id * 3
+            return [arr[offset], arr[offset + 1], arr[offset + 2]]
+        case "site":
+            let arr = self.siteXpos._array   // similarly, provide siteXpos
+            let offset = id * 3
+            return [arr[offset], arr[offset + 1], arr[offset + 2]]
+        default:
+            fatalError("Unsupported frame type: \(frameType)")
+        }
+    }
+    
+    public func xmat(at id: Int, frameType: String) -> [Double] {
+        let offset = id * 9
+        switch frameType {
+        case "body":
+            let arr = self.xmat._array
+            return (0..<9).map { arr[offset + $0] }
+        case "geom":
+            let arr = self.geomXmat._array
+            return (0..<9).map { arr[offset + $0] }
+        case "site":
+            let arr = self.siteXmat._array
+            return (0..<9).map { arr[offset + $0] }
+        default:
+            fatalError("Unsupported frame type: \(frameType)")
+        }
+    }
+    
+    public func bodyXPos(bodyId: Int) -> [Double] {
+        let array = xpos._array
+        let offset = bodyId * 3
+        return [array[offset], array[offset + 1], array[offset + 2]]
+    }
 
-  var qaccWarmstart: MjNumArray {
-    get {
-      MjNumArray(array: _data.pointee.qacc_warmstart, object: self, len: nv)
+    // Helper: extract quaternion of specific body (4 floats)
+    public func bodyXQuat(bodyId: Int) -> [Double] {
+        let array = xquat._array
+        let offset = bodyId * 4
+        return [array[offset], array[offset + 1], array[offset + 2], array[offset + 3]]
     }
-    set {
-      guard _data.pointee.qacc_warmstart != newValue._array else { return }
-      _data.pointee.qacc_warmstart.assign(from: newValue._array, count: Int(nv))
-    }
-  }
 
-  // Control.
-  var ctrl: MjNumArray {
-    get {
-      MjNumArray(array: _data.pointee.ctrl, object: self, len: nu)
-    }
-    set {
-      guard _data.pointee.ctrl != newValue._array else { return }
-      _data.pointee.ctrl.assign(from: newValue._array, count: Int(nu))
-    }
-  }
-
-  var qfrcApplied: MjNumArray {
-    get {
-      MjNumArray(array: _data.pointee.qfrc_applied, object: self, len: nv)
-    }
-    set {
-      guard _data.pointee.qfrc_applied != newValue._array else { return }
-      _data.pointee.qfrc_applied.assign(from: newValue._array, count: Int(nv))
-    }
-  }
-
-  var xfrcApplied: MjNumArray {
-    get {
-      MjNumArray(array: _data.pointee.xfrc_applied, object: self, len: nbody * 6)
-    }
-    set {
-      guard _data.pointee.xfrc_applied != newValue._array else { return }
-      _data.pointee.xfrc_applied.assign(from: newValue._array, count: Int(nbody * 6))
-    }
-  }
-
-  // Mocap data.
-  var mocapPos: MjNumArray {
-    get {
-      MjNumArray(array: _data.pointee.mocap_pos, object: self, len: nmocap * 3)
-    }
-    set {
-      guard _data.pointee.mocap_pos != newValue._array else { return }
-      _data.pointee.mocap_pos.assign(from: newValue._array, count: Int(nmocap * 3))
-    }
-  }
-
-  var mocapQuat: MjNumArray {
-    get {
-      MjNumArray(array: _data.pointee.mocap_quat, object: self, len: nmocap * 4)
-    }
-    set {
-      guard _data.pointee.mocap_quat != newValue._array else { return }
-      _data.pointee.mocap_quat.assign(from: newValue._array, count: Int(nmocap * 4))
-    }
-  }
-
-  // Dynamics.
-  var qacc: MjNumArray {
-    get {
-      MjNumArray(array: _data.pointee.qacc, object: self, len: nv)
-    }
-    set {
-      guard _data.pointee.qacc != newValue._array else { return }
-      _data.pointee.qacc.assign(from: newValue._array, count: Int(nv))
-    }
-  }
-
-  var actDot: MjNumArray {
-    get {
-      MjNumArray(array: _data.pointee.act_dot, object: self, len: na)
-    }
-    set {
-      guard _data.pointee.act_dot != newValue._array else { return }
-      _data.pointee.act_dot.assign(from: newValue._array, count: Int(na))
-    }
-  }
-
-  // User data.
-  var userdata: MjNumArray {
-    get {
-      MjNumArray(array: _data.pointee.userdata, object: self, len: nuserdata)
-    }
-    set {
-      guard _data.pointee.userdata != newValue._array else { return }
-      _data.pointee.userdata.assign(from: newValue._array, count: Int(nuserdata))
-    }
-  }
-
-  // Sensors.
-  var sensordata: MjNumArray {
-    get {
-      MjNumArray(array: _data.pointee.sensordata, object: self, len: nsensordata)
-    }
-    set {
-      guard _data.pointee.sensordata != newValue._array else { return }
-      _data.pointee.sensordata.assign(from: newValue._array, count: Int(nsensordata))
-    }
-  }
 }
+
+

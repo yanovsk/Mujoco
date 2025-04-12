@@ -128,6 +128,14 @@ public final class MjModel {
         return String(cString: cStringPtr)
     }
     
+    
+    public func bodyId(named name: String) -> Int? {
+           let id = name.withCString { cname in
+               mj_name2id(_model, Int32(mjOBJ_BODY.rawValue), cname)
+           }
+           return id >= 0 ? Int(id) : nil
+       }
+    
     public func jointName(atIndex i: Int) -> String {
         let offset = Int(_model.pointee.name_jntadr[i])
         let basePtr = _model.pointee.names!
@@ -135,6 +143,29 @@ public final class MjModel {
         return String(cString: cStringPtr)
     }
     
+    
+    public func keyframeId(named name: String) -> Int32? {
+        let keyType = Int32(mjOBJ_KEY.rawValue) // Convert mjtObj_ to Int32
+        let keyframeId = name.withCString { cname in
+            mj_name2id(_model, keyType, cname)
+        }
+        return keyframeId >= 0 ? keyframeId : nil
+    }
+    
+    public func mocapId(forBodyNamed name: String) -> Int? {
+        guard let bodyId = self.bodyId(named: name) else { return nil }
+        let id = _model.pointee.body_mocapid[bodyId]
+        return id >= 0 ? Int(id) : nil
+    }
+    
+    
+    public func frameId(named name: String, type: Int32) -> Int? {
+        let id = name.withCString { cname in
+            mj_name2id(_model, type, cname)
+        }
+        return id >= 0 ? Int(id) : nil
+    }
+
 
   // Initial State.
   var qpos0: MjNumArray {
@@ -156,4 +187,13 @@ public final class MjModel {
       _model.pointee.qpos_spring.assign(from: newValue._array, count: Int(_model.pointee.nq))
     }
   }
+    
+    public func mat2Quat(_ xmat: [Double]) -> [Double] {
+        precondition(xmat.count == 9)
+        var quat = [Double](repeating: 0.0, count: 4)
+        var mat = xmat  // Mujoco wants mutable
+        mju_mat2Quat(&quat, &mat)
+        return quat
+    }
+
 }
