@@ -2,14 +2,14 @@ import C_mujoco
 
 public final class MjData {
     let _data: UnsafeMutablePointer<mjData>
-    let nq: Int32
-    let nv: Int32
-    let na: Int32
-    let nu: Int32
-    let nbody: Int32
-    let nmocap: Int32
-    let nuserdata: Int32
-    let nsensordata: Int32
+    public let nq: Int32
+    public let nv: Int32
+    public let na: Int32
+    public let nu: Int32
+    public let nbody: Int32
+    public let nmocap: Int32
+    public let nuserdata: Int32
+    public let nsensordata: Int32
     
     init(data: UnsafeMutablePointer<mjData>, nq: Int32, nv: Int32, na: Int32, nu: Int32, nbody: Int32, nmocap: Int32, nuserdata: Int32, nsensordata: Int32) {
         _data = data
