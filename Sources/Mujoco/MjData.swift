@@ -287,3 +287,32 @@ public final class MjData {
 }
 
 
+//TODO: need to move this to some other file. for now if i move it to another file the app doesnt see it
+
+public func mat2quat(_ mat: [Double]) -> [Double] {
+    
+    print("count", mat.count)
+    precondition(mat.count == 9, "mat2quat requires 9 elements for a 3x3 matrix.")
+
+    var quat = [Double](repeating: 0.0, count: 4)
+    mju_mat2Quat(&quat, mat)
+
+    return quat
+}
+
+public func quat2mat(_ quat: [Double]) -> [Double] {
+    precondition(quat.count == 4, "quat2mat requires 4 elements for quaternion [w, x, y, z].")
+
+    var mat = [Double](repeating: 0.0, count: 9)
+    mju_quat2Mat(&mat, quat)
+
+    return mat
+}
+
+
+public func mulQuat(_ q1: [Double], _ q2: [Double]) -> [Double] {
+    precondition(q1.count == 4 && q2.count == 4, "mulQuat requires 4 elements each")
+    var result = [Double](repeating: 0.0, count: 4)
+    mju_mulQuat(&result, q1, q2)
+    return result
+}

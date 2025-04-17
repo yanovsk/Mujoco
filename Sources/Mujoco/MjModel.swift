@@ -195,5 +195,109 @@ public final class MjModel {
         mju_mat2Quat(&quat, &mat)
         return quat
     }
+    
+    public func mjKnematics(data: MjData) {
+        mj_kinematics(_model, data._data)
+    }
+
+    public func mjComPos(data: MjData) {
+        mj_comPos(_model, data._data)
+    }
+    
+    public func getNq() -> Int32 {
+        return _model.pointee.nq
+    }
+    
+    public func getNv() -> Int32 {
+        return _model.pointee.nv
+    }
+    
+    
+    public func getNjnt() -> Int32 {
+        return _model.pointee.njnt
+    }
+    
+    public func jointType(jointID: Int) -> mjtJoint {
+      let rawInt32 = _model.pointee.jnt_type[jointID]
+      let rawUInt32 = UInt32(bitPattern: rawInt32)   // reinterpret the bits as UInt32
+      return mjtJoint(rawValue: rawUInt32)
+        
+    }
+    
+
+    public func isJointLimited(jointID: Int) -> Bool {
+      return _model.pointee.jnt_limited[jointID] != 0
+    }
+    
+    // Qpos address (index into the qpos vector) for this joint
+    public func qposAdr(for jointID: Int) -> Int {
+      return Int(_model.pointee.jnt_qposadr[jointID])
+    }
+    
+    // Range [min, max] for this joint’s qpos (if limited)
+    public func qposRange(jointID: Int) -> (min: Double, max: Double) {
+        // jnt_range is an optional pointer to mjtNum
+        guard let basePtr = _model.pointee.jnt_range else {
+            fatalError("jnt_range is nil on the model")
+        }
+        let idx = jointID * 2
+        // Now we can subscript safely
+        let lo = Double(basePtr[idx])
+        let hi = Double(basePtr[idx + 1])
+        return (min: lo, max: hi)
+    }
+    
+    public func differentiatePos(
+        qvel: inout [Double],
+        dt: Double,
+        qpos1Ptr: UnsafePointer<Double>,
+        qpos2Ptr: UnsafePointer<Double>
+      ) {
+        precondition(qvel.count == Int(_model.pointee.nv))
+        qvel.withUnsafeMutableBufferPointer { qPtr in
+          mj_differentiatePos(
+            _model,
+            qPtr.baseAddress!,
+            dt,
+            qpos1Ptr,
+            qpos2Ptr
+          )
+        }
+      }
+        
+    public func mjJacBody(_ model: MjModel, _ data: MjData, _ jacp: inout [Double], _ jacr: inout [Double], _ bodyId: Int32) {
+        precondition(jacp.count == 3 * Int(model._model.pointee.nv))
+        precondition(jacr.count == 3 * Int(model._model.pointee.nv))
+
+        jacp.withUnsafeMutableBufferPointer { pPtr in
+            jacr.withUnsafeMutableBufferPointer { rPtr in
+                mj_jacBody(model._model, data._data, pPtr.baseAddress, rPtr.baseAddress, bodyId)
+            }
+        }
+    }
+    
+    public func mjJacGeom(_ model: MjModel, _ data: MjData, _ jacp: inout [Double], _ jacr: inout [Double], _ geomId: Int32) {
+        precondition(jacp.count == 3 * Int(model._model.pointee.nv))
+        precondition(jacr.count == 3 * Int(model._model.pointee.nv))
+
+        jacp.withUnsafeMutableBufferPointer { pPtr in
+            jacr.withUnsafeMutableBufferPointer { rPtr in
+                mj_jacGeom(model._model, data._data, pPtr.baseAddress, rPtr.baseAddress, geomId)
+            }
+        }
+    }
+
+    
+    public func mjJacSite(_ model: MjModel, _ data: MjData, _ jacp: inout [Double], _ jacr: inout [Double], _ siteId: Int32) {
+        precondition(jacp.count == 3 * Int(model._model.pointee.nv))
+        precondition(jacr.count == 3 * Int(model._model.pointee.nv))
+
+        jacp.withUnsafeMutableBufferPointer { pPtr in
+            jacr.withUnsafeMutableBufferPointer { rPtr in
+                mj_jacSite(model._model, data._data, pPtr.baseAddress, rPtr.baseAddress, siteId)
+            }
+        }
+    }
+
 
 }
